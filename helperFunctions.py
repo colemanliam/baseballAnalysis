@@ -1,30 +1,45 @@
 """
     This module will provide the helper functions which permit accessing the DB to provide the player information to the normal calls
 """
-a= "A"
-print(a)
-"""
-from sqlalchemy import text
+
+from sqlite3 import OperationalError
+from sqlalchemy.orm import Session
+from sqlalchemy import text, select
 
 
-def getPlayerID (fName, lName, engine, conn):
-    query = "SELECT playerID, birthYear \
-        FROM People \
-        WHERE nameLast LIKE '%" + lName + "%' AND nameFirst LIKE '%" + fName+"%' \
-        ORDER BY birthYear desc"
-    result = conn.execute(db.text(query))
+def getPlayerID (fName, lName, engine, Base):
 
-    return result
+    #creating a session
+    with Session(engine) as session:
+        People = Base.classes.People
+        
+        #handling query error
+        try:
+            result = session.execute(
+                select(People.playerID, People.birthYear).
+                where(People.nameLast == lName).
+                where(People.nameFirst == fName).
+                order_by(People.birthYear.desc())
+            )
+            
+            return result.first()[0]
+        except OperationalError:
+            return None
 
 
 if __name__ == "__main__":
     #testing imports
     import sqlalchemy as db
-    engine = db.create_engine('sqlite:///baseball_stats.db')
-    conn = engine.connect()
-    
+    from sqlalchemy.ext.automap import automap_base
 
-    print (getPlayerID("Jose", "Bautista", engine, conn))
-    conn.close()
+    engine = db.create_engine('sqlite:///baseball_stats.db')
+
+    
+    #setting up the automap of the DB
+    Base = automap_base()
+    Base.prepare(autoload_with=engine, reflect = True)
+    People = Base.classes.People
+
+    #acutal tests
+    print (getPlayerID("Jose", "Bautista", engine, Base))
     engine.dispose()
-"""

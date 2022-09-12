@@ -1,0 +1,1 @@
+alter table AllstarFull add primary key (playerID, yearID, teamID)
